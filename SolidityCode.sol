@@ -180,12 +180,13 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
         buyPrice = newBuyPrice;
     }
 
-    function buy() payable {
+    function buy() payable returns (uint amount){
         uint amount = msg.value / buyPrice;                // calculates the amount
         if (balanceOf[this] < amount) throw;               // checks if it has enough to sell
         balanceOf[msg.sender] += amount;                   // adds the amount to buyer's balance
         balanceOf[this] -= amount;                         // subtracts amount from seller's balance
         Transfer(this, msg.sender, amount);                // execute an event reflecting the change
+	return amount;
     }
 
     function sell(uint256 amount) {
