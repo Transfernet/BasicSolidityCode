@@ -53,6 +53,7 @@ contract token {
 
     /* Send coins */
     function transfer(address _to, uint256 _value) {
+        if (!approvedAccount[msg.sender]) throw;
         if (balanceOf[msg.sender] < _value) throw;           // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) throw; // Check for overflows
         balanceOf[msg.sender] -= _value;                     // Subtract from the sender
@@ -100,7 +101,7 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
     uint256 public sellPrice;
     uint256 public buyPrice;
 
-    mapping (address => bool) public frozenAccount;
+    mapping (address => bool) public approvedAccount;
 
     /* This generates a public event on the blockchain that will notify clients */
     event FrozenFunds(address target, bool frozen);
@@ -122,9 +123,10 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
     /* Send coins */
     function transfer(address _to, uint256 _value) {
         if (_to == 0x0) throw;                               // Prevent transfer to empty address
+	if (!approvedAccount[msg.sender]) throw;
         if (balanceOf[msg.sender] < _value) throw;           // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) throw; // Check for overflows
-        if (frozenAccount[msg.sender]) throw;                // Check if frozen
+        if (!approvedAccount[msg.sender]) throw;                // Check if frozen
         balanceOf[msg.sender] -= _value;                     // Subtract from the sender
         balanceOf[_to] += _value;                            // Add the same to the recipient
         Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
@@ -133,7 +135,7 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
 
     /* A contract attempts to get the coins */
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
-        if (frozenAccount[_from]) throw;                        // Check if frozen            
+        if (!approvedAccount[_from]) throw;                        // Check if frozen            
         if (balanceOf[_from] < _value) throw;                 // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) throw;  // Check for overflows
         if (_value > allowance[_from][msg.sender]) throw;   // Check allowance
@@ -152,7 +154,7 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
     }
 
     function freezeAccount(address target, bool freeze) onlyOwner {
-        frozenAccount[target] = freeze;
+        approvedAccount[target] = freeze;
         FrozenFunds(target, freeze);
     }
 
