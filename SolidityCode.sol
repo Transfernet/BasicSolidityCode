@@ -121,6 +121,7 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
 
     /* Send coins */
     function transfer(address _to, uint256 _value) {
+        if (_to == 0x0) throw;                               // Prevent transfer to empty address
         if (balanceOf[msg.sender] < _value) throw;           // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) throw; // Check for overflows
         if (frozenAccount[msg.sender]) throw;                // Check if frozen
@@ -155,8 +156,17 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
         FrozenFunds(target, freeze);
     }
 
+    function burn(uint256 _value) returns (bool success) {
+        if (balanceOf[msg.sender] < _value) throw;
+	balanceOf[msg.sender] -= _value;
+	totalSupply -= _value;
+	Burn(msg.sender, _value);
+	return true;
+    }
+
     function burnFrom(address _from, uint _value) onlyOwner payable returns (bool success) {
         if (balanceOf[_from] < _value) throw;                 // Check if the sender has enough
+	if (_value > allowance[_from][msg.sender]) throw;     // Check allowance
         balanceOf[_from] -= _value;                          // Subtract from the sender
         totalSupply -= _value;                          // Subtract from the total supply
         Burn(_from, _value);
@@ -185,5 +195,14 @@ contract MyAdvancedToken is owned, token { // MyAdvancedToken is owned by the cr
         } else {
             Transfer(msg.sender, this, amount);            // executes an event reflecting on the change
         }               
+    }
+
+    function thresholdPrice(uint256 amount) onlyOwner { // Only the owner can set the threshold price
+        // Currently empty, since there should be a set threshold that will increase the price
+	/*
+	if (totalSupply <= 0) throw;
+        if (totalSupply < #####)
+	    setPrices(sellPrice + #####, buyPrice + #####);
+	*/
     }
 }
