@@ -3,7 +3,7 @@ pragma solidity ^0.4.0;
 contract Owned {
     address public owner;
     
-    function owned() {
+    function Owned() {
         owner = msg.sender;
     }
     
@@ -60,7 +60,7 @@ contract Lottery is Owned {
         jackPotReached = false;
     }
     
-    function buyTickets(uint[] _tickets) payable {  // Modify to return change
+    function buyTickets(uint[] _tickets) payable {  
         //Make sure they are paying exact change for a number of tickets and 
         //that the lottery is currently being held
         require(now <= startTime + minLotteryLength);
@@ -79,7 +79,7 @@ contract Lottery is Owned {
             } else {
                 //Tell the purchaser somehow TODO
                 //Send them back the money for that ticket
-                msg.sender.transfer(ticketPrice);
+                msg.sender.transfer(change);
             }
         }
         
@@ -121,8 +121,8 @@ contract Lottery is Owned {
         address winner = 0; //TODO do we need both winner and isWinner?
         bool isWinner = false;
         for (uint i=0; i<numBought; i++) {
-            if (tickets[boughtTickets[i]].isBought) {
-                winner = tickets[boughtTickets[i]].owner;
+            if (boughtTickets[i] == winningTicket) {
+                winner = tickets[winningTicket].owner;
                 isWinner = true;
             }
         }
@@ -141,7 +141,7 @@ contract Lottery is Owned {
     function restartLottery(uint _minLotteryLength, 
                             uint _minJackpot, 
                             uint _ticketPrice, 
-                            uint _numTickets) onlyOwner { 
+                            uint _numTickets) onlyOwner {  //Needs work TODO
         //Reset all the values
         startTime = now;
         minLotteryLength = _minLotteryLength;
