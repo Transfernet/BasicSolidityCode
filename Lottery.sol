@@ -7,7 +7,7 @@ contract Owned {
         owner = msg.sender;
     }
     
-    modifier onlyOwner() public {
+    modifier onlyOwner() {
         require(msg.sender == owner);
         _;
     }
@@ -46,7 +46,7 @@ contract Lottery is Owned {
     event MinJackpotReached();
     
     function Lottery(uint _lotteryLength, uint _minJackpot, 
-                        uint _ticketPrice, uint _numTickets) {
+                        uint _ticketPrice, uint _numTickets) public {
         numBought = 0;
         
         startTime = now;
@@ -60,7 +60,7 @@ contract Lottery is Owned {
         jackPotReached = false;
     }
     
-    function buyTickets(uint[] _tickets) payable {  
+    function buyTickets(uint[] _tickets) public payable {  
         //Make sure they are paying exact change for a number of tickets and 
         //that the lottery is currently being held
         require(now <= startTime + minLotteryLength);
@@ -100,7 +100,7 @@ contract Lottery is Owned {
         }
     }
     
-    function endLottery() onlyOwner {
+    function endLottery() public onlyOwner {
         //Ensure it's time to end
         require(now >= startTime + minLotteryLength);  
         //TODO These timeLimitReached and minJackpotReached bools might need work
@@ -141,7 +141,7 @@ contract Lottery is Owned {
     function restartLottery(uint _minLotteryLength, 
                             uint _minJackpot, 
                             uint _ticketPrice, 
-                            uint _numTickets) onlyOwner {  //Needs work TODO
+                            uint _numTickets) public onlyOwner {  //Needs work TODO
         //Reset all the values
         startTime = now;
         minLotteryLength = _minLotteryLength;
