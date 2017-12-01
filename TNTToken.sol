@@ -1,26 +1,7 @@
 pragma solidity ^0.4.2;
-contract owned {
-    address public owner;
-
-    /* The creator of this token becomes the owner */
-    function owned() public {
-        owner = msg.sender;
-    }
-
-    /* Only the owner can do things with this modifier */
-    modifier onlyOwner {
-        require (msg.sender == owner);
-        _;
-    }
-
-    /* You can transfer ownership to another address */
-    function transferOwnership(address newOwner) public onlyOwner {
-        owner = newOwner;
-    }
-}
 
     /* Called by approveAndCall */
-contract tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData); }
+contract tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData) public; }
 
 contract token {
     /* Public variables of the token */
@@ -36,7 +17,7 @@ contract token {
     mapping (address => mapping (address => uint256)) public allowance;
 
     /* This generates a public event on the blockchain that will notify clients */
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    //event Transfer(address indexed from, address indexed to, uint256 value);
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
     function token(
@@ -57,7 +38,7 @@ contract token {
         require (balanceOf[_to] + _value > balanceOf[_to]); // Check for overflows
         balanceOf[msg.sender] -= _value;                     // Subtract from the sender
         balanceOf[_to] += _value;                            // Add the same to the recipient
-        Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
+        //Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
     }
 
     /* Allow another contract to spend some tokens in your behalf */
@@ -87,7 +68,7 @@ contract token {
         balanceOf[_from] -= _value;                          // Subtract from the sender
         balanceOf[_to] += _value;                            // Add the same to the recipient
         allowance[_from][msg.sender] -= _value;
-        Transfer(_from, _to, _value);
+        //Transfer(_from, _to, _value);
         return true;
     }
 
@@ -97,17 +78,18 @@ contract token {
     }
 }
 
-contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, and inherits the token contract
+contract TNTToken is token { // MyAdvancedToken is owned by the creator, and inherits the token contract
 
     uint256 public sellPrice;
     uint256 public buyPrice;
+    address owner;
 
     mapping (address => bool) public approvedAccount;
 
     /* This generates a public event on the blockchain that will notify clients */
-    event FrozenFunds(address target, bool frozen);
+    //event FrozenFunds(address target, bool frozen);
     /* This notifies clients about the amount burnt */
-    event Burn(address indexed from, uint256 value);
+    //event Burn(address indexed from, uint256 value);
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
     function TNTToken(
@@ -130,7 +112,7 @@ contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, 
         require (approvedAccount[msg.sender]);                // Check if frozen
         balanceOf[msg.sender] -= _value;                     // Subtract from the sender
         balanceOf[_to] += _value;                            // Add the same to the recipient
-        Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
+        //Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
     }
 
 
@@ -145,20 +127,20 @@ contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, 
         balanceOf[_from] -= _value;                          // Subtract from the sender
         balanceOf[_to] += _value;                            // Add the same to the recipient
         allowance[msg.sender][_from] -= _value;
-        Transfer(_from, _to, _value);
+        //Transfer(_from, _to, _value);
         return true;
     }
 
     function freezeAccount(address target, bool freeze) public onlyOwner {
         approvedAccount[target] = freeze;
-        FrozenFunds(target, freeze);
+        //FrozenFunds(target, freeze);
     }
 
     function burn(uint256 _value) public returns (bool success) {
         require (balanceOf[msg.sender] >= _value);
 	    balanceOf[msg.sender] -= _value;
 	    totalSupply -= _value;
-	    Burn(msg.sender, _value);
+	    //Burn(msg.sender, _value);
 	    return true;
     }
 
@@ -167,7 +149,7 @@ contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, 
 	    require (_value <= allowance[_from][msg.sender]);   // Check allowance
         balanceOf[_from] -= _value;                         // Subtract from the sender
         totalSupply -= _value;                              // Subtract from the total supply
-        Burn(_from, _value);
+        //Burn(_from, _value);
         return true;
     }
 
@@ -181,7 +163,7 @@ contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, 
         require (balanceOf[this] >= amount);               // checks if it has enough to sell
         balanceOf[msg.sender] += amount;                   // adds the amount to buyer's balance
         balanceOf[this] -= amount;                         // subtracts amount from seller's balance
-        Transfer(this, msg.sender, amount);                // execute an event reflecting the change
+        //Transfer(this, msg.sender, amount);                // execute an event reflecting the change
 	return amount;
     }
 
@@ -192,16 +174,25 @@ contract TNTToken is owned, token { // MyAdvancedToken is owned by the creator, 
         if (!msg.sender.send(amount * sellPrice)) {        // sends ether to the seller. It's important
             revert();                                      // to do this last to avoid recursion attacks
         } else {
-            Transfer(msg.sender, this, amount);            // executes an event reflecting on the change
+            //Transfer(msg.sender, this, amount);            // executes an event reflecting on the change
         }               
     }
+    
+    modifier onlyOwner {
+        require (msg.sender == owner);
+        _;
+    }
+    
+    function transferOwnership(address newOwner) public onlyOwner {
+        owner = newOwner;
+    }
 
-    function thresholdPrice(uint256 amount) public onlyOwner { // Only the owner can set the threshold price
+    //function thresholdPrice(uint256 amount) public onlyOwner { // Only the owner can set the threshold price
         // Currently empty, since there should be a set threshold that will increase the price
 	/*
 	if (totalSupply <= 0) throw;
         if (totalSupply < #####)
 	    setPrices(sellPrice + #####, buyPrice + #####);
 	*/
-    }
+    //}
 }
