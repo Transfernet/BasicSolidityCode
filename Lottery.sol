@@ -1,10 +1,34 @@
 pragma solidity ^0.4.17;
 
-contract Owned {
+contract Lottery {
+    address[] tickets;
+    uint public numBought;
+    
     address public owner;
     
-    function Owned() public {
+    uint public etherPool;
+    uint public fundingPool;
+    uint public minJackpot;
+    uint public ticketPrice;
+    uint public numTickets;
+    
+    bool public jackpotReached;
+    
+    function Lottery(uint _minJackpot, 
+                     uint _ticketPrice, 
+                     uint _numTickets) public {
+        
+        numBought = 0;
+        
         owner = msg.sender;
+        
+        etherPool = 0;
+        fundingPool = 0;
+        minJackpot = _minJackpot;
+        ticketPrice = _ticketPrice;
+        numTickets = _numTickets;
+        
+        jackpotReached = false;
     }
     
     modifier onlyOwner() {
@@ -12,123 +36,69 @@ contract Owned {
         _;
     }
     
-    function transferOwnership(address newOwner) public {
-        owner = newOwner;
-    }
-}
-
-contract Lottery is Owned {
-    
-    address[] public tickets;  //Might need to somehow initialize this array to a size
-    //Used mostly for reset of the lottery so we don't have to search the
-    //full array to reset the isBought bools
-    uint public numBought;
-    
-    uint public etherPool;    //In wei
-    uint public minJackpot;   //In wei
-    uint public ticketPrice;  //In wei
-    uint public numTickets;
-    
-    uint etherFundingPool;
-    bool jackPotReached;
-    
-    event LotteryEnded(bool winnerExists, address winner, uint prize);
-    event NewLotteryBegun(uint prize);
-    event MinJackpotReached();
-    
-    function Lottery(uint _minJackpot, uint _ticketPrice, uint _numTickets) public {
-        numBought = 0;
-        
-        etherPool = 0;
-        minJackpot = _minJackpot;
-        ticketPrice = _ticketPrice;
-        numTickets = _numTickets;
-        
-        jackPotReached = false;
-    }
-    
-    function buyTickets() public payable {  
-        //Make sure they are paying exact change for a number of tickets and 
-        //that the lottery is currently being held
+    function buyTickets() public payable {
         require(msg.value >= ticketPrice);
         
-        //uint change = msg.value % ticketPrice;
         uint ticketsBought = msg.value / ticketPrice;
-        //if ((ticketsBought + numBought) > numTickets) {
-        //    change += (ticketsBought + numBought - numTickets) * ticketPrice;
-        //}
-        
+        uint change = msg.value % ticketPrice;
         for (uint i=0; i<ticketsBought; i++) {
-            tickets[numBought] = msg.sender;
+            tickets.push(msg.sender);
             numBought++;
-            if (numBought >= numTickets) {
-                break;
-            }
         }
         
-        //if (change > 0) {
-        //    msg.sender.transfer(change);
-        //}
+        uint value = ticketsBought * ticketPrice;
+        etherPool += value * 9 / 10;
+        fundingPool += value / 10;
         
-        //Reflect the purchases in the pool
-        etherPool += ((msg.value * 9) / 10);
-        etherFundingPool += (msg.value / 10);
+        if (change > 0) {
+            msg.sender.transfer(change);
+        }
         
-        //Check to trigger event for reaching minimum pool
-        if(!jackPotReached && (etherPool > minJackpot)) {
-            jackPotReached = true;
-            MinJackpotReached();   //Call event
+        if (etherPool >= minJackpot) {
+            jackpotReached = true;
         }
     }
     
-    function endLottery() public onlyOwner {
+    function RestartLottery(uint _minJackpot, 
+                            uint _ticketPrice, 
+                            uint _numTickets) public onlyOwner {
         
-        require(jackPotReached);
+        require(jackpotReached);
         
-        /////////////////////////////////////////////
-        //Take a current or specific block hash and//
-        //divide by the number of tickets in the   //
-        //lottery.  Remainder is the winning ticket//
-        /////////////////////////////////////////////
         uint winningTicket = block.number % numTickets;
         
-        address winner = 0; //TODO do we need both winner and isWinner?
+        address winner = 0;
         bool isWinner = false;
-        if (winningTicket < numBought) {
+        if(winningTicket < numBought) {
             winner = tickets[winningTicket];
             isWinner = true;
         }
         
-        LotteryEnded(isWinner, winner, etherPool);
-        
         if(isWinner) {
             winner.transfer(etherPool);
-            owner.transfer(etherFundingPool);
+            owner.transfer(fundingPool);
             etherPool = 0;
-            etherFundingPool = 0;
-        } 
+            fundingPool = 0;
+            numBought = 0;
+            jackpotReached = false;
+        }
         
+        if (_minJackpot > 0) {
+            minJackpot = _minJackpot;
+        }
+        if (_ticketPrice > 0) {
+            ticketPrice = _ticketPrice;
+        }
+        if (_numTickets > 0) {
+            numTickets = _numTickets;
+        }
     }
     
-    function restartLottery(uint _minJackpot, 
-                            uint _ticketPrice, 
-                            uint _numTickets) public onlyOwner {  
-        //Reset all the values
-        minJackpot = _minJackpot;   
-        ticketPrice = _ticketPrice;  
-        numTickets = _numTickets;
-    
-        jackPotReached = false;
-    
-        //Reset the tickets
-        numBought = 0;
-    
-        //Alert watchers
-        NewLotteryBegun(etherPool);
+    function TransferOwnership(address newOwner) public onlyOwner {
+        owner = newOwner;
     }
     
-    function Die() public onlyOwner {
+    function Kill() public onlyOwner {
         selfdestruct(owner);
     }
-    
 }
